@@ -27,11 +27,14 @@ rules:
   options:
     symbolic_propagation: true
   pattern-sources:
+  - pattern: '"contact_email"'
+  - pattern: $OBJ["contact_email"]
+  - pattern: $OBJ.contact_email
   - patterns:
-    - pattern-either:
-      - pattern: '"contact_email"'
-      - pattern: $OBJ["contact_email"]
-      - pattern: $OBJ.contact_email
+    - pattern: '"$STR"'
+    - metavariable-regex:
+        metavariable: $STR
+        regex: (?is).*contact_email.*
   pattern-propagators:
   - pattern: $CURSOR.execute($QUERY, ...)
     from: $QUERY
@@ -48,7 +51,14 @@ rules:
   pattern-sinks:
   - pattern: print(...)
   - pattern: logging.$METHOD(...)
-  - pattern: $LOGGER.$METHOD(...)
+  - patterns:
+    - pattern: $LOGGER.$METHOD(...)
+    - metavariable-regex:
+        metavariable: $LOGGER
+        regex: (?i)^(self\.)?(logger|log)$
+    - metavariable-regex:
+        metavariable: $METHOD
+        regex: ^(debug|info|warning|warn|error|critical|exception|log)$
   - pattern: requests.$METHOD(...)
   - pattern: return ...
 - id: sensitive-data-leak.email
@@ -76,11 +86,14 @@ rules:
   options:
     symbolic_propagation: true
   pattern-sources:
+  - pattern: '"email"'
+  - pattern: $OBJ["email"]
+  - pattern: $OBJ.email
   - patterns:
-    - pattern-either:
-      - pattern: '"email"'
-      - pattern: $OBJ["email"]
-      - pattern: $OBJ.email
+    - pattern: '"$STR"'
+    - metavariable-regex:
+        metavariable: $STR
+        regex: (?is).*email.*
   pattern-propagators:
   - pattern: $CURSOR.execute($QUERY, ...)
     from: $QUERY
@@ -97,7 +110,14 @@ rules:
   pattern-sinks:
   - pattern: print(...)
   - pattern: logging.$METHOD(...)
-  - pattern: $LOGGER.$METHOD(...)
+  - patterns:
+    - pattern: $LOGGER.$METHOD(...)
+    - metavariable-regex:
+        metavariable: $LOGGER
+        regex: (?i)^(self\.)?(logger|log)$
+    - metavariable-regex:
+        metavariable: $METHOD
+        regex: ^(debug|info|warning|warn|error|critical|exception|log)$
   - pattern: requests.$METHOD(...)
   - pattern: return ...
 - id: sensitive-data-leak.flagged_ssn
@@ -128,11 +148,14 @@ rules:
   options:
     symbolic_propagation: true
   pattern-sources:
+  - pattern: '"flagged_ssn"'
+  - pattern: $OBJ["flagged_ssn"]
+  - pattern: $OBJ.flagged_ssn
   - patterns:
-    - pattern-either:
-      - pattern: '"flagged_ssn"'
-      - pattern: $OBJ["flagged_ssn"]
-      - pattern: $OBJ.flagged_ssn
+    - pattern: '"$STR"'
+    - metavariable-regex:
+        metavariable: $STR
+        regex: (?is).*flagged_ssn.*
   pattern-propagators:
   - pattern: $CURSOR.execute($QUERY, ...)
     from: $QUERY
@@ -149,7 +172,14 @@ rules:
   pattern-sinks:
   - pattern: print(...)
   - pattern: logging.$METHOD(...)
-  - pattern: $LOGGER.$METHOD(...)
+  - patterns:
+    - pattern: $LOGGER.$METHOD(...)
+    - metavariable-regex:
+        metavariable: $LOGGER
+        regex: (?i)^(self\.)?(logger|log)$
+    - metavariable-regex:
+        metavariable: $METHOD
+        regex: ^(debug|info|warning|warn|error|critical|exception|log)$
   - pattern: requests.$METHOD(...)
   - pattern: return ...
 - id: sensitive-data-leak.ssn
@@ -177,11 +207,14 @@ rules:
   options:
     symbolic_propagation: true
   pattern-sources:
+  - pattern: '"ssn"'
+  - pattern: $OBJ["ssn"]
+  - pattern: $OBJ.ssn
   - patterns:
-    - pattern-either:
-      - pattern: '"ssn"'
-      - pattern: $OBJ["ssn"]
-      - pattern: $OBJ.ssn
+    - pattern: '"$STR"'
+    - metavariable-regex:
+        metavariable: $STR
+        regex: (?is).*ssn.*
   pattern-propagators:
   - pattern: $CURSOR.execute($QUERY, ...)
     from: $QUERY
@@ -198,6 +231,13 @@ rules:
   pattern-sinks:
   - pattern: print(...)
   - pattern: logging.$METHOD(...)
-  - pattern: $LOGGER.$METHOD(...)
+  - patterns:
+    - pattern: $LOGGER.$METHOD(...)
+    - metavariable-regex:
+        metavariable: $LOGGER
+        regex: (?i)^(self\.)?(logger|log)$
+    - metavariable-regex:
+        metavariable: $METHOD
+        regex: ^(debug|info|warning|warn|error|critical|exception|log)$
   - pattern: requests.$METHOD(...)
   - pattern: return ...

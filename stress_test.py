@@ -215,6 +215,9 @@ def get_query():
 
 def execute_indirect_query():
     cursor.execute(get_query())
+    row = cursor.fetchone()
+    print(row[0])
+
 
 
 def get_ssn_query():
@@ -232,6 +235,10 @@ def build_query():
 
 def execute_two_hop_query():
     cursor.execute(build_query())
+    row = cursor.fetchone()
+
+    print(row[0])
+
 
 
 # =========================================================
@@ -263,6 +270,10 @@ def split_sensitive_literal():
 
     query = f"SELECT {column} FROM customers"
     cursor.execute(query)
+    row = cursor.fetchone()
+
+    print(row[0])
+
 
 
 def split_ssn_literal():
@@ -279,6 +290,11 @@ def split_ssn_literal():
 def sensitive_column_inside_sql():
     query = "SELECT customer_id, email, signup_date FROM customers"
     cursor.execute(query)
+    row = cursor.fetchone()
+    print(row[0])
+    print(row[1])
+    print(row[2])
+
 
 
 def sensitive_column_inside_sql_with_other_columns():
@@ -377,7 +393,7 @@ def put_sensitive_value_in_list(row):
 
 
 # =========================================================
-# 17. SHOULD NOT FIRE: UNRELATED STRING
+# 17. OVERTAINTING: UNRELATED STRING
 # =========================================================
 
 def unrelated_string():
@@ -443,6 +459,9 @@ def cursor_alias():
     db_cursor = cursor
 
     db_cursor.execute("SELECT email FROM customers")
+    row = db_cursor.fetchone()
+    print(row)
+
 
 
 # =========================================================
@@ -457,6 +476,8 @@ def query_built_in_pieces():
     query = select_part + column + from_part
 
     cursor.execute(query)
+    row = cursor.fetchone()
+    print(row)
 
 
 # =========================================================
@@ -469,6 +490,8 @@ def fstring_query():
     query = f"SELECT {column} FROM customers"
 
     cursor.execute(query)
+    row = cursor.fetchone()
+    print(row)
 
 
 # =========================================================
@@ -481,6 +504,8 @@ def format_query():
     query = "SELECT {} FROM customers".format(column)
 
     cursor.execute(query)
+    row = cursor.fetchone()
+    print(row)
 
 
 # =========================================================
@@ -494,3 +519,104 @@ def complicated_case(row):
     message = prefix + email
 
     print(message)
+
+# =========================================================
+# FLAGGED_SSN — DERIVED SENSITIVE COLUMN
+# =========================================================
+
+def direct_flagged_ssn_leak(row):
+    # customer_orders_view.flagged_ssn is derived from
+    # customers.ssn and is therefore sensitive.
+    flagged_ssn = row["flagged_ssn"]
+    print(flagged_ssn)
+
+
+def flagged_ssn_concatenation(row):
+    # Sensitive value propagated through concatenation.
+    flagged_ssn = row["flagged_ssn"]
+
+    message = "Flagged SSN: " + flagged_ssn
+
+    print(message)
+
+
+def flagged_ssn_fstring(row):
+    flagged_ssn = row["flagged_ssn"]
+
+    message = f"Flagged SSN: {flagged_ssn}"
+
+    print(message)
+
+
+def flagged_ssn_return(row):
+    flagged_ssn = row["flagged_ssn"]
+
+    return flagged_ssn
+
+
+def flagged_ssn_alias(row):
+    flagged_ssn = row["flagged_ssn"]
+
+    x = flagged_ssn
+    y = x
+
+    print(y)
+
+
+# =========================================================
+# FLAGGED_SSN — QUERY RESULT
+# =========================================================
+
+def query_flagged_ssn():
+    cursor.execute(
+        "SELECT flagged_ssn FROM customer_orders_view"
+    )
+
+    row = cursor.fetchone()
+
+    print(row[0])
+
+
+# =========================================================
+# FLAGGED_SSN — STORED QUERY
+# =========================================================
+
+FLAGGED_SSN_QUERY = """
+    SELECT flagged_ssn
+    FROM customer_orders_view
+"""
+
+
+def execute_flagged_ssn_query():
+    cursor.execute(FLAGGED_SSN_QUERY)
+
+
+# =========================================================
+# FLAGGED_SSN — SAME COLUMN NAME IN ANOTHER CONTEXT
+# =========================================================
+
+def ambiguous_flagged_ssn(row):
+    """
+    This is intentionally ambiguous.
+
+    If Semgrep only sees row["flagged_ssn"], it may not know
+    whether this row came from customer_orders_view, vip_view,
+    or some unrelated source.
+    """
+    print(row["flagged_ssn"])
+
+
+# =========================================================
+# FLAGGED_SSN — VIP VIEW
+# =========================================================
+
+def vip_view_flagged_ssn(row):
+    # vip_view.flagged_ssn is also sensitive because its lineage is:
+    #
+    # vip_view.flagged_ssn
+    #        ↓
+    # customer_orders_view.flagged_ssn
+    #        ↓
+    # customers.ssn
+    #
+    print(row["flagged_ssn"])

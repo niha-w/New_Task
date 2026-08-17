@@ -139,7 +139,30 @@ def load_sensitive_columns(path: Path) -> dict[str, list[ColumnEntry]]:
 SINK_PATTERNS: list[dict[str, Any]] = [
     {"pattern": "print(...)"},
     {"pattern": "logging.$METHOD(...)"},
-    {"pattern": "$LOGGER.$METHOD(...)"},
+    {
+        # Constrained, unlike a bare "$LOGGER.$METHOD(...)" pattern would be:
+        # a metavariable is just a placeholder, not a name filter -- an
+        # unconstrained "$LOGGER.$METHOD(...)" matches ANY object calling
+        # ANY method (e.g. it silently matched cursor.execute(...) during
+        # testing, which was never meant to be a sink here). The
+        # metavariable-regex below restricts $LOGGER to variables that are
+        # actually named like a logger, and $METHOD to real log-level calls.
+        "patterns": [
+            {"pattern": "$LOGGER.$METHOD(...)"},
+            {
+                "metavariable-regex": {
+                    "metavariable": "$LOGGER",
+                    "regex": r"(?i)^(self\.)?(logger|log)$",
+                }
+            },
+            {
+                "metavariable-regex": {
+                    "metavariable": "$METHOD",
+                    "regex": r"^(debug|info|warning|warn|error|critical|exception|log)$",
+                }
+            },
+        ]
+    },
     {"pattern": "requests.$METHOD(...)"},
     {"pattern": "return ..."},
 ]
@@ -156,12 +179,64 @@ CURSOR_PROPAGATORS: list[dict[str, Any]] = [
 
 
 def build_source_patterns(column: str) -> list[dict[str, Any]]:
-    """Source variants for one column name: literal, dict-style, attribute-style."""
+    """Source variants for one column name: literal, dict-style, attribute-style,
+    and raw-string-containing-the-column-name (e.g. a SQL string stored in a
+    constant, `QUERY = "SELECT email FROM customers"`).
+
+    The 4th variant closes a real gap found during testing: an exact-literal
+    pattern-source only matches a string whose ENTIRE content is the column
+    name -- it does not match the column name appearing as a substring inside
+    a larger string (e.g. a full SQL query). That larger-string case has to be
+    matched separately, via a Semgrep string-literal pattern combined with a
+    metavariable-regex constraint on its captured content.
+
+    Two non-obvious Semgrep engine behaviors had to be verified empirically
+    (both differ from what the documentation reads like at a glance, and both
+    fail *silently* -- no error, just an over- or under-matching rule -- if
+    you get them wrong):
+      - metavariable-regex only applies when nested inside a `patterns:` list
+        alongside the `pattern:` it constrains. Attaching it as a sibling key
+        directly on a bare top-level `pattern:` (or directly on a
+        pattern-sources list item) is silently ignored -- the constraint
+        never filters anything, and the source over-matches every string in
+        the file.
+      - metavariable-regex performs a FULL match (like Python's
+        re.fullmatch), not a substring search. A regex of just "email"
+        matches nothing; it has to be ".*email.*" to catch "email" appearing
+        anywhere inside the captured string.
+
+    Known, accepted trade-off: matching is substring-based, not whole-word.
+    A `\\b`-style word-boundary constraint was tested and found unreliable in
+    Semgrep's regex engine (it incorrectly matched "emailaddress" against a
+    \\bemail\\b pattern in testing). Rather than rely on a boundary mechanism
+    that doesn't behave as documented, this deliberately over-matches (e.g.
+    it will also flag a string literal containing "emailaddress") in favor of
+    not missing real leaks. Document this precision/recall trade-off in the
+    project writeup.
+
+    The regex also needs the `s` (dotall) flag: metavariable-regex requires a
+    FULL match against the captured content, and multi-line/triple-quoted
+    SQL strings contain literal newline characters that a plain `.` will not
+    cross by default -- without `s`, a query stored as a triple-quoted
+    string across multiple lines silently fails to match even though a
+    single-line version of the same string works fine.
+    """
     quoted = json.dumps(column)  # safely escaped, e.g. "credit_card" -> '"credit_card"'
     return [
         {"pattern": quoted},
         {"pattern": f"$OBJ[{quoted}]"},
         {"pattern": f"$OBJ.{column}"},
+        {
+            "patterns": [
+                {"pattern": '"$STR"'},
+                {
+                    "metavariable-regex": {
+                        "metavariable": "$STR",
+                        "regex": f"(?is).*{column}.*",
+                    }
+                },
+            ]
+        },
     ]
 
 
@@ -210,9 +285,7 @@ def build_rule(column: str, entries: list[ColumnEntry]) -> dict[str, Any]:
             # of an already-tainted value -- closes gaps (1)/(2) above.
             "symbolic_propagation": True,
         },
-        "pattern-sources": [
-            {"patterns": [{"pattern-either": build_source_patterns(column)}]}
-        ],
+        "pattern-sources": build_source_patterns(column),
         "pattern-propagators": copy.deepcopy(CURSOR_PROPAGATORS),
         "pattern-sinks": copy.deepcopy(SINK_PATTERNS),
     }
