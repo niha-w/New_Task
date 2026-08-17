@@ -1,0 +1,47 @@
+[
+    {
+        "data_type": "int",
+        "table_name": "customers",
+        "column_name": "id"
+    },
+    {
+        "data_type": "varchar",
+        "table_name": "customers",
+        "column_name": "name"
+    },
+    {
+        "data_type": "varchar",
+        "table_name": "customers",
+        "column_name": "email"
+    },
+    {
+        "data_type": "varchar",
+        "table_name": "customers",
+        "column_name": "ssn"
+    },
+    {
+        "data_type": "date",
+        "table_name": "customers",
+        "column_name": "signup_date"
+    },
+    {
+        "data_type": "int",
+        "table_name": "orders",
+        "column_name": "id"
+    },
+    {
+        "data_type": "int",
+        "table_name": "orders",
+        "column_name": "customer_id"
+    },
+    {
+        "data_type": "decimal",
+        "table_name": "orders",
+        "column_name": "amount"
+    },
+    {
+        "data_type": "varchar",
+        "table_name": "orders",
+        "column_name": "status"
+    }
+]

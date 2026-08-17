@@ -1,0 +1,203 @@
+rules:
+- id: sensitive-data-leak.contact_email
+  mode: taint
+  languages:
+  - python
+  severity: ERROR
+  message: 'Possible leak of sensitive column ''contact_email'' (category: pii). Present in: customer_orders_view,
+    vip_view. Derived from base column(s): customers.email. Sensitive values must not reach print/log/HTTP-response/return
+    sinks without explicit review.'
+  metadata:
+    category: security
+    subcategory:
+    - data-leak
+    confidence: MEDIUM
+    sensitivity_categories:
+    - pii
+    tables:
+    - customer_orders_view
+    - vip_view
+    column_provenance:
+    - derived
+    derived_from:
+    - customers.email
+    owasp:
+    - A01:2021 - Broken Access Control
+    - A09:2021 - Security Logging and Monitoring Failures
+  options:
+    symbolic_propagation: true
+  pattern-sources:
+  - patterns:
+    - pattern-either:
+      - pattern: '"contact_email"'
+      - pattern: $OBJ["contact_email"]
+      - pattern: $OBJ.contact_email
+  pattern-propagators:
+  - pattern: $CURSOR.execute($QUERY, ...)
+    from: $QUERY
+    to: $CURSOR
+  - pattern: $CURSOR.fetchone()
+    from: $CURSOR
+    to: $CURSOR
+  - pattern: $CURSOR.fetchall()
+    from: $CURSOR
+    to: $CURSOR
+  - pattern: $CURSOR.fetchmany(...)
+    from: $CURSOR
+    to: $CURSOR
+  pattern-sinks:
+  - pattern: print(...)
+  - pattern: logging.$METHOD(...)
+  - pattern: $LOGGER.$METHOD(...)
+  - pattern: requests.$METHOD(...)
+  - pattern: return ...
+- id: sensitive-data-leak.email
+  mode: taint
+  languages:
+  - python
+  severity: ERROR
+  message: 'Possible leak of sensitive column ''email'' (category: pii). Present in: customers. Sensitive
+    values must not reach print/log/HTTP-response/return sinks without explicit review.'
+  metadata:
+    category: security
+    subcategory:
+    - data-leak
+    confidence: MEDIUM
+    sensitivity_categories:
+    - pii
+    tables:
+    - customers
+    column_provenance:
+    - base
+    derived_from: []
+    owasp:
+    - A01:2021 - Broken Access Control
+    - A09:2021 - Security Logging and Monitoring Failures
+  options:
+    symbolic_propagation: true
+  pattern-sources:
+  - patterns:
+    - pattern-either:
+      - pattern: '"email"'
+      - pattern: $OBJ["email"]
+      - pattern: $OBJ.email
+  pattern-propagators:
+  - pattern: $CURSOR.execute($QUERY, ...)
+    from: $QUERY
+    to: $CURSOR
+  - pattern: $CURSOR.fetchone()
+    from: $CURSOR
+    to: $CURSOR
+  - pattern: $CURSOR.fetchall()
+    from: $CURSOR
+    to: $CURSOR
+  - pattern: $CURSOR.fetchmany(...)
+    from: $CURSOR
+    to: $CURSOR
+  pattern-sinks:
+  - pattern: print(...)
+  - pattern: logging.$METHOD(...)
+  - pattern: $LOGGER.$METHOD(...)
+  - pattern: requests.$METHOD(...)
+  - pattern: return ...
+- id: sensitive-data-leak.flagged_ssn
+  mode: taint
+  languages:
+  - python
+  severity: ERROR
+  message: 'Possible leak of sensitive column ''flagged_ssn'' (category: pii). Present in: customer_orders_view,
+    vip_view. Derived from base column(s): customers.ssn. Sensitive values must not reach print/log/HTTP-response/return
+    sinks without explicit review.'
+  metadata:
+    category: security
+    subcategory:
+    - data-leak
+    confidence: MEDIUM
+    sensitivity_categories:
+    - pii
+    tables:
+    - customer_orders_view
+    - vip_view
+    column_provenance:
+    - derived
+    derived_from:
+    - customers.ssn
+    owasp:
+    - A01:2021 - Broken Access Control
+    - A09:2021 - Security Logging and Monitoring Failures
+  options:
+    symbolic_propagation: true
+  pattern-sources:
+  - patterns:
+    - pattern-either:
+      - pattern: '"flagged_ssn"'
+      - pattern: $OBJ["flagged_ssn"]
+      - pattern: $OBJ.flagged_ssn
+  pattern-propagators:
+  - pattern: $CURSOR.execute($QUERY, ...)
+    from: $QUERY
+    to: $CURSOR
+  - pattern: $CURSOR.fetchone()
+    from: $CURSOR
+    to: $CURSOR
+  - pattern: $CURSOR.fetchall()
+    from: $CURSOR
+    to: $CURSOR
+  - pattern: $CURSOR.fetchmany(...)
+    from: $CURSOR
+    to: $CURSOR
+  pattern-sinks:
+  - pattern: print(...)
+  - pattern: logging.$METHOD(...)
+  - pattern: $LOGGER.$METHOD(...)
+  - pattern: requests.$METHOD(...)
+  - pattern: return ...
+- id: sensitive-data-leak.ssn
+  mode: taint
+  languages:
+  - python
+  severity: ERROR
+  message: 'Possible leak of sensitive column ''ssn'' (category: pii). Present in: customers. Sensitive
+    values must not reach print/log/HTTP-response/return sinks without explicit review.'
+  metadata:
+    category: security
+    subcategory:
+    - data-leak
+    confidence: MEDIUM
+    sensitivity_categories:
+    - pii
+    tables:
+    - customers
+    column_provenance:
+    - base
+    derived_from: []
+    owasp:
+    - A01:2021 - Broken Access Control
+    - A09:2021 - Security Logging and Monitoring Failures
+  options:
+    symbolic_propagation: true
+  pattern-sources:
+  - patterns:
+    - pattern-either:
+      - pattern: '"ssn"'
+      - pattern: $OBJ["ssn"]
+      - pattern: $OBJ.ssn
+  pattern-propagators:
+  - pattern: $CURSOR.execute($QUERY, ...)
+    from: $QUERY
+    to: $CURSOR
+  - pattern: $CURSOR.fetchone()
+    from: $CURSOR
+    to: $CURSOR
+  - pattern: $CURSOR.fetchall()
+    from: $CURSOR
+    to: $CURSOR
+  - pattern: $CURSOR.fetchmany(...)
+    from: $CURSOR
+    to: $CURSOR
+  pattern-sinks:
+  - pattern: print(...)
+  - pattern: logging.$METHOD(...)
+  - pattern: $LOGGER.$METHOD(...)
+  - pattern: requests.$METHOD(...)
+  - pattern: return ...

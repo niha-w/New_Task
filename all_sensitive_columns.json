@@ -1,0 +1,58 @@
+[
+  {
+    "table": "customers",
+    "column": "email",
+    "sensitive": true,
+    "category": "pii",
+    "source": "base",
+    "derived_from": []
+  },
+  {
+    "table": "customers",
+    "column": "ssn",
+    "sensitive": true,
+    "category": "pii",
+    "source": "base",
+    "derived_from": []
+  },
+  {
+    "table": "customer_orders_view",
+    "column": "contact_email",
+    "sensitive": true,
+    "category": "pii",
+    "source": "derived",
+    "derived_from": [
+      "customers.email"
+    ]
+  },
+  {
+    "table": "customer_orders_view",
+    "column": "flagged_ssn",
+    "sensitive": true,
+    "category": "pii",
+    "source": "derived",
+    "derived_from": [
+      "customers.ssn"
+    ]
+  },
+  {
+    "table": "vip_view",
+    "column": "contact_email",
+    "sensitive": true,
+    "category": "pii",
+    "source": "derived",
+    "derived_from": [
+      "customers.email"
+    ]
+  },
+  {
+    "table": "vip_view",
+    "column": "flagged_ssn",
+    "sensitive": true,
+    "category": "pii",
+    "source": "derived",
+    "derived_from": [
+      "customers.ssn"
+    ]
+  }
+]

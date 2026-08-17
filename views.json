@@ -1,0 +1,10 @@
+[
+    {
+        "sql": "select `c`.`id` AS `id`,`c`.`name` AS `name`,`c`.`email` AS `contact_email`,`o`.`amount` AS `amount`,(case when (`o`.`status` = 'flagged') then `c`.`ssn` else NULL end) AS `flagged_ssn` from (`sandbox_db`.`customers` `c` join `sandbox_db`.`orders` `o` on((`c`.`id` = `o`.`customer_id`)))",
+        "view": "customer_orders_view"
+    },
+    {
+        "sql": "select `sandbox_db`.`customer_orders_view`.`id` AS `id`,`sandbox_db`.`customer_orders_view`.`contact_email` AS `contact_email`,`sandbox_db`.`customer_orders_view`.`flagged_ssn` AS `flagged_ssn` from `sandbox_db`.`customer_orders_view` where (`sandbox_db`.`customer_orders_view`.`amount` > 1000)",
+        "view": "vip_view"
+    }
+]

@@ -1,0 +1,22 @@
+[
+    {
+        "table": "customer_orders_view",
+        "column": "contact_email",
+        "category": "pii"
+    },
+    {
+        "table": "customers",
+        "column": "email",
+        "category": "pii"
+    },
+    {
+        "table": "customers",
+        "column": "ssn",
+        "category": "pii"
+    },
+    {
+        "table": "vip_view",
+        "column": "contact_email",
+        "category": "pii"
+    }
+]
