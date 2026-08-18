@@ -46,6 +46,31 @@ def safe_non_sensitive_column(row):
     print(row["signup_date"])
 
 
+#notice where it does get flagged and where it does not
+def get_customer():
+    cursor.execute("SELECT email FROM customers")
+    row = cursor.fetchone()
+    print(row)
+    return cursor.fetchone()
+
+
+def get_employee():
+    cursor.execute("SELECT email FROM employees")
+    row = cursor.fetchone()
+    print(row)
+    return cursor.fetchone()
+
+
+def print_customer():
+    row = get_customer()
+    print(row["email"])
+
+
+def print_employee():
+    row = get_employee()
+    print(row["email"])
+
+
 # =========================================================
 # 2. column = "credit_card"; f"...{column}..."
 # =========================================================
@@ -58,13 +83,15 @@ def dynamic_column_name(row):
 def dynamic_column_fstring(row):
     column = "ssn"
     query = f"SELECT {column} FROM customers"
-    cursor.execute(query)
+    print(cursor.execute(query))
 
 def dynamic_column_fstring_later(column):
     query = f"SELECT {column} FROM customers"
     cursor.execute(query)
+    row = cursor.fetchone()
+    print(row)
 
-
+dynamic_column_fstring_later("email")
 # =========================================================
 # 3. CONCATENATION OF AN ALREADY-TAINTED VALUE
 # =========================================================
@@ -121,6 +148,11 @@ def positional_row_access():
     row = cursor.fetchone()
     print(row[0])
 
+def positional_row_access_1():
+    cursor.execute("SELECT email FROM sample")
+    row = cursor.fetchone()
+    print(row[0])
+
 def positional_row_access_ssn():
     cursor.execute("SELECT ssn FROM customers")
     row = cursor.fetchone()
@@ -172,6 +204,7 @@ def customers_email(row):
 def some_other_table_email():
     cursor.execute("SELECT id, email FROM sample")
     row = cursor.fetchone()
+    #dict access of the row by "email", if would have been row[0], doesnt get flagged
     print(row["email"])
 
 def view_contact_email(row):
@@ -190,7 +223,7 @@ def vip_contact_email(row):
 # table-scoped raw-string source fix.
 # ---------------------------------------------------------------
 def get_query():
-    return "SELECT email FROM sample"
+    return "SELECT email FROM customers"
 
 def execute_indirect_query():
     cursor.execute(get_query())
@@ -202,6 +235,8 @@ def get_ssn_query():
 
 def execute_indirect_ssn_query():
     cursor.execute(get_ssn_query())
+    ow = cursor.fetchone()
+    print(row[0])
 
 def build_query():
     return get_query()
