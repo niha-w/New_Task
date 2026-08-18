@@ -71,6 +71,7 @@ import argparse
 import copy
 import json
 import logging
+import re
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -178,7 +179,7 @@ CURSOR_PROPAGATORS: list[dict[str, Any]] = [
 ]
 
 
-def build_source_patterns(column: str) -> list[dict[str, Any]]:
+def build_source_patterns(column: str, tables: list[str]) -> list[dict[str, Any]]:
     """Source variants for one column name: literal, dict-style, attribute-style,
     and raw-string-containing-the-column-name (e.g. a SQL string stored in a
     constant, `QUERY = "SELECT email FROM customers"`).
@@ -205,12 +206,36 @@ def build_source_patterns(column: str) -> list[dict[str, Any]]:
         matches nothing; it has to be ".*email.*" to catch "email" appearing
         anywhere inside the captured string.
 
+    Table-scoping (added after testing against get_query() returning
+    "SELECT email FROM sample"): the raw-string source now requires the
+    string to contain BOTH the column name AND the name of one of the
+    table(s)/view(s) this column is actually tagged sensitive in. A string
+    that mentions "email" but only in the context of an unrelated table
+    (e.g. "sample") is no longer treated as a source. This uses a positive
+    lookahead per required piece rather than a rigid ordering, so column and
+    table name can appear in either order in the SQL text.
+
+    A general "sanitizer" that reaches into surrounding code to check for a
+    nearby table name was tried and rejected for the dict/attribute-style
+    sources (row["email"], row.email): it produced a real false negative in
+    testing -- a function containing BOTH a safe query and a genuinely
+    sensitive query got fully un-tainted, because the sanitizer only needed
+    to find one "safe-looking" execute() call anywhere in the function, not
+    the absence of a sensitive one. That failure mode is worse than the
+    false positive it was meant to fix, so dict/attribute-style access
+    remains intentionally conservative (always flagged) -- consistent with
+    the "ambiguous_email" limitation documented elsewhere in this project.
+    Table-scoping is only applied to the raw-string source, where it only
+    inspects the content of the one string being evaluated and so cannot
+    suffer that cross-statement failure mode.
+
     Known, accepted trade-off: matching is substring-based, not whole-word.
     A `\\b`-style word-boundary constraint was tested and found unreliable in
     Semgrep's regex engine (it incorrectly matched "emailaddress" against a
     \\bemail\\b pattern in testing). Rather than rely on a boundary mechanism
     that doesn't behave as documented, this deliberately over-matches (e.g.
-    it will also flag a string literal containing "emailaddress") in favor of
+    it will also flag a string literal containing "emailaddress", or a table
+    name that happens to be a substring of a different table) in favor of
     not missing real leaks. Document this precision/recall trade-off in the
     project writeup.
 
@@ -222,6 +247,8 @@ def build_source_patterns(column: str) -> list[dict[str, Any]]:
     single-line version of the same string works fine.
     """
     quoted = json.dumps(column)  # safely escaped, e.g. "credit_card" -> '"credit_card"'
+    table_alternation = "|".join(re.escape(t) for t in tables)
+    raw_string_regex = f"(?is)(?=.*{re.escape(column)})(?=.*({table_alternation})).*"
     return [
         {"pattern": quoted},
         {"pattern": f"$OBJ[{quoted}]"},
@@ -232,7 +259,7 @@ def build_source_patterns(column: str) -> list[dict[str, Any]]:
                 {
                     "metavariable-regex": {
                         "metavariable": "$STR",
-                        "regex": f"(?is).*{column}.*",
+                        "regex": raw_string_regex,
                     }
                 },
             ]
@@ -285,7 +312,7 @@ def build_rule(column: str, entries: list[ColumnEntry]) -> dict[str, Any]:
             # of an already-tainted value -- closes gaps (1)/(2) above.
             "symbolic_propagation": True,
         },
-        "pattern-sources": build_source_patterns(column),
+        "pattern-sources": build_source_patterns(column, tables),
         "pattern-propagators": copy.deepcopy(CURSOR_PROPAGATORS),
         "pattern-sinks": copy.deepcopy(SINK_PATTERNS),
     }

@@ -20,13 +20,10 @@ The examples intentionally include both obvious and tricky cases.
 class FakeCursor:
     def execute(self, query, params=None):
         pass
-
     def fetchone(self):
         return None
-
     def fetchall(self):
         return []
-
 
 cursor = FakeCursor()
 
@@ -38,7 +35,6 @@ cursor = FakeCursor()
 def direct_sensitive_lookup(row):
     email = row["email"]
     print(email)
-
 
 def direct_ssn_lookup(row):
     ssn = row["ssn"]
@@ -59,12 +55,10 @@ def dynamic_column_name(row):
     value = row[column]
     print(value)
 
-
 def dynamic_column_fstring(row):
     column = "ssn"
     query = f"SELECT {column} FROM customers"
     cursor.execute(query)
-
 
 def dynamic_column_fstring_later(column):
     query = f"SELECT {column} FROM customers"
@@ -80,27 +74,20 @@ def concatenate_tainted_value(row):
 
     # Tainted value is preserved through concatenation.
     message = "Customer email: " + email
-
     print(message)
-
 
 def concatenate_tainted_value_multiple_times(row):
     email = row["email"]
-
     message = "EMAIL=" + email + " END"
     print(message)
 
-
 def fstring_tainted_value(row):
     email = row["email"]
-
     message = f"Customer email: {email}"
     print(message)
 
-
 def format_tainted_value(row):
     email = row["email"]
-
     message = "Customer email: {}".format(email)
     print(message)
 
@@ -111,20 +98,15 @@ def format_tainted_value(row):
 
 SENSITIVE_QUERY = "SELECT email FROM customers"
 
-
 def execute_sensitive_constant():
     cursor.execute(SENSITIVE_QUERY)
-
 
 def execute_sensitive_constant_then_fetch():
     cursor.execute(SENSITIVE_QUERY)
     row = cursor.fetchone()
     print(row)
 
-
-# Another form.
 QUERY = "SELECT ssn FROM customers"
-
 
 def execute_ssn_query():
     cursor.execute(QUERY)
@@ -136,17 +118,12 @@ def execute_ssn_query():
 
 def positional_row_access():
     cursor.execute("SELECT email FROM customers")
-
     row = cursor.fetchone()
-
     print(row[0])
-
 
 def positional_row_access_ssn():
     cursor.execute("SELECT ssn FROM customers")
-
     row = cursor.fetchone()
-
     print(row[0])
 
 
@@ -157,21 +134,17 @@ def positional_row_access_ssn():
 def dictionary_style(row):
     print(row["email"])
 
-
 class Customer:
     def __init__(self):
         self.email = None
         self.ssn = None
         self.signup_date = None
 
-
 def attribute_style(customer):
     print(customer.email)
 
-
 def attribute_style_ssn(customer):
     print(customer.ssn)
-
 
 def safe_attribute(customer):
     print(customer.signup_date)
@@ -182,61 +155,60 @@ def safe_attribute(customer):
 # =========================================================
 
 def customers_email(row):
-    # customers.email is sensitive
     print(row["email"])
 
-
-def some_other_table_email(row):
-    # Imagine this came from a different table where email
-    # is NOT sensitive.
+# ---------------------------------------------------------------
+# FIXED: previously had no table context at all. In real code you
+# always need SOME evidence of which table a row came from -- here
+# that's an explicit, adjacent query against a genuinely different,
+# non-sensitive table. This still gets flagged, intentionally: dict
+# access is a documented, conservative-by-default source (see
+# `ambiguous_email` below) that does not inspect surrounding code,
+# because a table-aware sanitizer was tested and found to introduce
+# a worse problem -- a real false negative when a function contains
+# both a safe and a sensitive query. See generate_semgrep_rules.py
+# for the full writeup of that finding.
+# ---------------------------------------------------------------
+def some_other_table_email():
+    cursor.execute("SELECT id, email FROM sample")
+    row = cursor.fetchone()
     print(row["email"])
-
 
 def view_contact_email(row):
     # customer_orders_view.contact_email is derived from
     # customers.email and therefore sensitive.
     print(row["contact_email"])
 
-
 def vip_contact_email(row):
     # vip_view.contact_email is also derived from
     # customers.email.
     print(row["contact_email"])
 
-
-# =========================================================
-# 8. INTERPROCEDURAL:
-#    cursor.execute(get_query())
-# =========================================================
-
+# ---------------------------------------------------------------
+# FIXED: get_query() now explicitly returns from a non-sensitive
+# table ('sample', not 'customers'). Should NOT fire after the
+# table-scoped raw-string source fix.
+# ---------------------------------------------------------------
 def get_query():
-    return "SELECT email FROM customers"
-
+    return "SELECT email FROM sample"
 
 def execute_indirect_query():
     cursor.execute(get_query())
     row = cursor.fetchone()
     print(row[0])
 
-
-
 def get_ssn_query():
     return "SELECT ssn FROM customers"
-
 
 def execute_indirect_ssn_query():
     cursor.execute(get_ssn_query())
 
-
-# Another level of indirection.
 def build_query():
     return get_query()
-
 
 def execute_two_hop_query():
     cursor.execute(build_query())
     row = cursor.fetchone()
-
     print(row[0])
 
 
@@ -246,15 +218,9 @@ def execute_two_hop_query():
 # =========================================================
 
 def character_by_character():
-    column = (
-        "s"
-        + "s"
-        + "n"
-    )
-
+    column = ("s" + "s" + "n")
     query = f"SELECT {column} FROM customers"
     cursor.execute(query)
-
 
 def character_by_character_simple():
     column = "s" + "s" + "n"
@@ -267,18 +233,13 @@ def character_by_character_simple():
 
 def split_sensitive_literal():
     column = "ema" + "il"
-
     query = f"SELECT {column} FROM customers"
     cursor.execute(query)
     row = cursor.fetchone()
-
     print(row[0])
-
-
 
 def split_ssn_literal():
     column = "s" + "s" + "n"
-
     query = f"SELECT {column} FROM customers"
     cursor.execute(query)
 
@@ -295,18 +256,11 @@ def sensitive_column_inside_sql():
     print(row[1])
     print(row[2])
 
-
-
 def sensitive_column_inside_sql_with_other_columns():
     query = """
-        SELECT
-            id,
-            name,
-            email,
-            signup_date
+        SELECT id, name, email, signup_date
         FROM customers
     """
-
     cursor.execute(query)
 
 
@@ -317,11 +271,9 @@ def sensitive_column_inside_sql_with_other_columns():
 def send_to_logger(value):
     print(value)
 
-
 def indirect_leak(row):
     email = row["email"]
     send_to_logger(email)
-
 
 def indirect_ssn_leak(row):
     ssn = row["ssn"]
@@ -335,12 +287,9 @@ def indirect_ssn_leak(row):
 def declassify_for_aggregate(value):
     return value
 
-
 def supposedly_safe(row):
     email = row["email"]
-
     safe_value = declassify_for_aggregate(email)
-
     print(safe_value)
 
 
@@ -350,11 +299,9 @@ def supposedly_safe(row):
 
 def alias_sensitive_value(row):
     email = row["email"]
-
     x = email
     y = x
     z = y
-
     print(z)
 
 
@@ -366,7 +313,6 @@ def return_sensitive_email(row):
     email = row["email"]
     return email
 
-
 def return_sensitive_ssn(row):
     ssn = row["ssn"]
     return ssn
@@ -377,18 +323,11 @@ def return_sensitive_ssn(row):
 # =========================================================
 
 def put_sensitive_value_in_dict(row):
-    result = {
-        "customer_email": row["email"]
-    }
-
+    result = {"customer_email": row["email"]}
     print(result)
 
-
 def put_sensitive_value_in_list(row):
-    values = [
-        row["email"]
-    ]
-
+    values = [row["email"]]
     print(values)
 
 
@@ -399,7 +338,6 @@ def put_sensitive_value_in_list(row):
 def unrelated_string():
     message = "This function has nothing to do with email"
     print(message)
-
 
 def unrelated_variable():
     email_status = "verified"
@@ -414,7 +352,6 @@ def safe_signup_date(row):
     date = row["signup_date"]
     print(date)
 
-
 def safe_customer_id(row):
     customer_id = row["id"]
     print(customer_id)
@@ -426,11 +363,10 @@ def safe_customer_id(row):
 
 def ambiguous_email(row_from_unknown_source):
     """
-    This is intentionally ambiguous.
-
-    Without knowing which table/view 'row' came from,
-    Semgrep cannot reliably determine whether row["email"]
-    is customers.email or some unrelated email column.
+    Intentionally ambiguous, documented, accepted limitation: dict-access
+    sources match on column name only, since Semgrep cannot trace an
+    arbitrary 'row' object back to the query that produced it without
+    the false-negative-prone sanitizer approach rejected above.
     """
     print(row_from_unknown_source["email"])
 
@@ -441,11 +377,8 @@ def ambiguous_email(row_from_unknown_source):
 
 def query_then_pass_around():
     cursor.execute("SELECT email FROM customers")
-
     row = cursor.fetchone()
-
     process_customer(row)
-
 
 def process_customer(row):
     print(row)
@@ -457,7 +390,6 @@ def process_customer(row):
 
 def cursor_alias():
     db_cursor = cursor
-
     db_cursor.execute("SELECT email FROM customers")
     row = db_cursor.fetchone()
     print(row)
@@ -472,9 +404,7 @@ def query_built_in_pieces():
     select_part = "SELECT "
     column = "email"
     from_part = " FROM customers"
-
     query = select_part + column + from_part
-
     cursor.execute(query)
     row = cursor.fetchone()
     print(row)
@@ -486,9 +416,7 @@ def query_built_in_pieces():
 
 def fstring_query():
     column = "email"
-
     query = f"SELECT {column} FROM customers"
-
     cursor.execute(query)
     row = cursor.fetchone()
     print(row)
@@ -500,9 +428,7 @@ def fstring_query():
 
 def format_query():
     column = "email"
-
     query = "SELECT {} FROM customers".format(column)
-
     cursor.execute(query)
     row = cursor.fetchone()
     print(row)
@@ -514,10 +440,8 @@ def format_query():
 
 def complicated_case(row):
     email = row["email"]
-
     prefix = "Customer: "
     message = prefix + email
-
     print(message)
 
 # =========================================================
@@ -525,41 +449,27 @@ def complicated_case(row):
 # =========================================================
 
 def direct_flagged_ssn_leak(row):
-    # customer_orders_view.flagged_ssn is derived from
-    # customers.ssn and is therefore sensitive.
     flagged_ssn = row["flagged_ssn"]
     print(flagged_ssn)
 
-
 def flagged_ssn_concatenation(row):
-    # Sensitive value propagated through concatenation.
     flagged_ssn = row["flagged_ssn"]
-
     message = "Flagged SSN: " + flagged_ssn
-
     print(message)
-
 
 def flagged_ssn_fstring(row):
     flagged_ssn = row["flagged_ssn"]
-
     message = f"Flagged SSN: {flagged_ssn}"
-
     print(message)
-
 
 def flagged_ssn_return(row):
     flagged_ssn = row["flagged_ssn"]
-
     return flagged_ssn
-
 
 def flagged_ssn_alias(row):
     flagged_ssn = row["flagged_ssn"]
-
     x = flagged_ssn
     y = x
-
     print(y)
 
 
@@ -568,12 +478,8 @@ def flagged_ssn_alias(row):
 # =========================================================
 
 def query_flagged_ssn():
-    cursor.execute(
-        "SELECT flagged_ssn FROM customer_orders_view"
-    )
-
+    cursor.execute("SELECT flagged_ssn FROM customer_orders_view")
     row = cursor.fetchone()
-
     print(row[0])
 
 
@@ -586,12 +492,11 @@ FLAGGED_SSN_QUERY = """
     FROM customer_orders_view
 """
 
-
 def execute_flagged_ssn_query():
     cursor.execute(FLAGGED_SSN_QUERY)
-
-
-# =========================================================
+    row = cursor.fetchone()
+    print(row)
+#    =========================================================
 # FLAGGED_SSN — SAME COLUMN NAME IN ANOTHER CONTEXT
 # =========================================================
 

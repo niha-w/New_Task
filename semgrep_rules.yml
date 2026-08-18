@@ -34,7 +34,7 @@ rules:
     - pattern: '"$STR"'
     - metavariable-regex:
         metavariable: $STR
-        regex: (?is).*contact_email.*
+        regex: (?is)(?=.*contact_email)(?=.*(customer_orders_view|vip_view)).*
   pattern-propagators:
   - pattern: $CURSOR.execute($QUERY, ...)
     from: $QUERY
@@ -93,7 +93,7 @@ rules:
     - pattern: '"$STR"'
     - metavariable-regex:
         metavariable: $STR
-        regex: (?is).*email.*
+        regex: (?is)(?=.*email)(?=.*(customers)).*
   pattern-propagators:
   - pattern: $CURSOR.execute($QUERY, ...)
     from: $QUERY
@@ -155,7 +155,7 @@ rules:
     - pattern: '"$STR"'
     - metavariable-regex:
         metavariable: $STR
-        regex: (?is).*flagged_ssn.*
+        regex: (?is)(?=.*flagged_ssn)(?=.*(customer_orders_view|vip_view)).*
   pattern-propagators:
   - pattern: $CURSOR.execute($QUERY, ...)
     from: $QUERY
@@ -214,7 +214,7 @@ rules:
     - pattern: '"$STR"'
     - metavariable-regex:
         metavariable: $STR
-        regex: (?is).*ssn.*
+        regex: (?is)(?=.*ssn)(?=.*(customers)).*
   pattern-propagators:
   - pattern: $CURSOR.execute($QUERY, ...)
     from: $QUERY
