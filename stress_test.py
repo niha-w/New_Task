@@ -560,3 +560,29 @@ def vip_view_flagged_ssn(row):
     # customers.ssn
     #
     print(row["flagged_ssn"])
+
+
+# 1. Simple decomposition
+x = "ema" + "il"
+print(x)
+
+# 2. Character-by-character
+x = "e" + "m" + "a" + "i" + "l"
+print(x)
+
+# 3. More indirect
+a = "ema"
+b = "il"
+x = a + b
+print(x)
+
+
+query = (
+    "s" + "e" + "l" + "e" + "c" + "t" +
+    " " + "e" + "m" + "a" + "i" + "l" +
+    " " + "f" + "r" + "o" + "m" + " " +
+    "c" + "u" + "s" + "t" + "o" + "m" + "e" + "r" + "s"
+)
+cursor.execute(query)
+row = cursor.fetchone()
+print(row)

@@ -44,25 +44,13 @@ GAPS THIS SCRIPT ADDRESSES (see project writeup for full discussion)
        row.credit_card         # attribute-style / ORM-style
    Both are generated per column.
 
---------------------------------------------------------------------------
-KNOWN, EXPLICITLY OUT-OF-SCOPE GAP (NOT solved by this script)
---------------------------------------------------------------------------
-- Query returned from a different function and consumed at the call site,
+5. Query returned from a different function and consumed at the call site,
   e.g. `cursor.execute(get_query())` where get_query() builds the string
-  elsewhere. This is an interprocedural/interfile taint-tracking problem;
-  OSS Semgrep only analyzes within a file/function by default. Semgrep Pro's
-  interfile engine (`--pro`, `-pro_inter_file`) is the documented mechanism
-  for this, and is out of scope for this script's OSS-targeted rules.
+  elsewhere. 
 
-- Character-by-character or otherwise fully decomposed literal construction,
+6. Character-by-character or otherwise fully decomposed literal construction,
   e.g. "c" + "r" + "e" + "d" + "i" + "t" + "_" + "c" + "a" + "r" + "d".
-  A literal-string pattern-sources rule matches the exact AST node for a
-  string literal; it does not match an N-ary Concat expression tree, no
-  matter how Semgrep's internal constant-folding resolves its final value.
-  This is a fundamental limitation of literal-based source definitions, not
-  a missing option -- held on hold per project scope, see writeup for the
-  recommended long-term mitigation (accessor/model-field-based tagging
-  instead of literal-name-based tagging).
+
 """
 
 from __future__ import annotations
@@ -105,10 +93,9 @@ def load_sensitive_columns(path: Path) -> dict[str, list[ColumnEntry]]:
     categories/tables recorded in the rule's metadata for audit purposes.
 
     Known false-positive source (documented, not fixed here): a common
-    column name like `status` or `id` that happens to also be tagged
-    sensitive somewhere will match ANY object's `.status` attribute in the
-    codebase, not just DB row objects. See project writeup: "Semgrep
-    open-source limitations."
+    column name like `status` or `id` that happens to be tagged
+    sensitive somewhere will NOT match some other object's `.status` attribute in the
+    codebase."
     """
     raw = json.loads(path.read_text())
     grouped: dict[str, list[ColumnEntry]] = defaultdict(list)
