@@ -47,9 +47,11 @@ GAPS THIS SCRIPT ADDRESSES (see project writeup for full discussion)
 5. Query returned from a different function and consumed at the call site,
   e.g. `cursor.execute(get_query())` where get_query() builds the string
   elsewhere. 
+  SemGrep's taint engine propagates taint through function return values by default, so no special rule component is required. This was tested in playground, so Pro was not used, still it was flagged.
 
 6. Character-by-character or otherwise fully decomposed literal construction,
   e.g. "c" + "r" + "e" + "d" + "i" + "t" + "_" + "c" + "a" + "r" + "d".
+  Symbolic propagation (1) handles this, and stress-testing confirmed that Semgrep's taint engine does indeed propagate taint through such fully-decomposed string construction.
 
 """
 
