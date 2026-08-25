@@ -6,5 +6,5 @@ view the files in the following sequence for better comprehension:
 2) gives three json files (schema, views, seed.json)
 3) these three json files are taken as input in propagate.py, run this file
 4) this python files outputs two more json files: sensitivity_lineage.json and all_sensitive_columns.json, which is an exhaustive info of sensitive cols propagating and total list of all sensitive entities.
-5) these two json are taken as input in generate_semgrep_rules_(1).py, which generates the semgrep_rule1.yml file.
+5) these two json are taken as input in generate_semgrep_rules_(1).py, which generates the semgrep_rules.yml file.
 6) paste on of the rule from this file in a semgrep playground, and test it against the code called stress_test.py
