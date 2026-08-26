@@ -18,7 +18,7 @@ sensitivity_lineage.json  +  all_sensitive_columns.json
 generate_semgrep_rules_(1).py
         │  produces
         ▼
-semgrep_rules1.yml
+semgrep_rules.yml
         │
         ▼
 tested manually in Semgrep Playground against stress_test.py
