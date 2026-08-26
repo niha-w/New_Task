@@ -41,7 +41,7 @@ For every sensitive column name, the rule says: "if this value ever reaches a `p
 - Someone reads a database row and grabs the sensitive field out of it — either `row["email"]` or `row.email` style.
 - The value gets passed around, renamed, or glued into another string before printing.
 
-Output: `semgrep_rules1.yml` — one rule per sensitive column name.
+Output: `semgrep_rules.yml` — one rule per sensitive column name.
 
 ## Step 4 — Test it
 File: `stress_test.py`
